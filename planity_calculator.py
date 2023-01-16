@@ -18,7 +18,7 @@ import math
 
 # Definning global variables
 radius = 0.06
-px_size = 0.06
+px_size = 0.10
 radius_l2 = 0.05
 radius2 = 1
 
@@ -26,9 +26,9 @@ radius2 = 1
 # Definition of the planity_measure 
 def planity_measure_df(df):
     """This function takes a point as input and gives the absolute error : distance to the plane at this point"""
-    if len(df) <= 3:
-        planity_measure = 1
-    else :
+    if len(df) < 3:
+        planity_measure = 0
+    else :    
         regress_plane = ols("z ~ x + y", df).fit()
         d, a, b = regress_plane._results.params
         c = -1
@@ -78,14 +78,20 @@ if __name__ == "__main__":
     df_intermediate = df_coords_3d.copy()
 
     # Let's know where each point belongs (voxel number)
-    df_intermediate['i'] = (N_x*((df_coords_3d['x'] - xmin)/(xmax - xmin))).astype(np.int)
-    df_intermediate['j'] = (N_y*((df_coords_3d['y'] - ymin)/(ymax - ymin))).astype(np.int)
-    df_intermediate['k'] = (N_z*((df_coords_3d['z'] - zmin)/(zmax - zmin))).astype(np.int)
-    df_intermediate['voxel'] = df_intermediate['i'] + df_intermediate['j']*(np.log10(N_x)//1 + 1) + df_intermediate['k']*(np.log10(N_x)//1 + np.log10(N_y)//1 + 2)
+    df_intermediate['i'] = (N_x*((df_coords_3d['x'] - xmin)/(xmax - xmin))).astype(np.int64)
+    df_intermediate['j'] = (N_y*((df_coords_3d['y'] - ymin)/(ymax - ymin))).astype(np.int64)
+    df_intermediate['k'] = (N_z*((df_coords_3d['z'] - zmin)/(zmax - zmin))).astype(np.int64)
+    df_intermediate['index'] = df_intermediate.index
+    df_intermediate['voxel'] = (df_intermediate['i'] + df_intermediate['j']*(10**(np.log10(N_x)//1 + 1)) + df_intermediate['k']*(10**(np.log10(N_x)//1 + np.log10(N_y)//1 + 2))).astype(np.int64)
+    print(f" La nombre de voxels remplis différents est de {df_intermediate['voxel'].unique().size}")
     
     # We calculate the planity measure in each voxel 
     data = df_intermediate.groupby(['voxel'], group_keys=True).apply(planity_measure_df)
-    df_final = pd.merge(df_intermediate, data.to_frame(name = "planity_measure"), left_on='voxel', right_index=True, inplace = True)
+    data = data.to_frame(name = "planity_measure")
+    data.index = data.index.astype(np.int64)
+    df_final = pd.merge(df_intermediate, data, left_on='voxel', right_index=True)
+    df_final.index = df_final['index']
+    df_final.sort_index(inplace = True)
 
     # What time is it ? 
     print(np.round(time.time() - start), 2)
