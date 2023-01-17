@@ -22,8 +22,8 @@ import math
 
 path = "./Documents/Mines Paris/2A/Data sophia/Projet de recherche/Tetrapodes/Segmentation/"
 execute = "python create_image_edges.py"
-delta = 0.0095
-kernel_size_max = 3
+delta = 0.011
+kernel_size_max = 4
 
 if __name__ == "__main__": 
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     max_array = agg_array.max()
 
     # We first set maximum value to 0.45
-    agg_array[agg_array > 0.45] = 0.45
+    # agg_array[agg_array > 0.45] = 0.45
 
     # We then apply a maximum function to avoid black pixels : it reduces the size of the shape but makes better the classification algorithm
     agg_array = scipy.ndimage.maximum_filter(input  = agg_array, size = kernel_size_max, mode = 'constant') 
@@ -112,24 +112,5 @@ if __name__ == "__main__":
     np.savetxt("table_image2.txt", agg_array)
 
     plt.imshow(agg_array, cmap = 'jet')
-    # plt.imshow(agg_array, cmap = 'rainbow')
     plt.savefig('image_egdes_scaled_caché', dpi = 800)
     print("The finale fig is saved")
-    #img = ds.tf.shade(agg, cmap=cc.coolwarm)
-    """img_array = np.asarray(img)
-    img_array = np.where(img_array != 0, img_array, img_array.min())
-    plt.imshow(img_array, cmap = 'gray')
-    plt.show()"""
-
-    """
-    export_image(img, "out_non_first", export_path=".")
-
-    #plt.imshow(scipy.ndimage.gaussian_filter(np.asarray(img), 0.5))
-    #plt.show()
-
-
-    df_coords_3d.sort_values(by = 'z', ascending = False, inplace = True)
-    agg = cvs.points(df_coords_3d, 'x', 'y', agg = ds.first('planity'), size = 0.001)
-    img = ds.tf.shade(agg, cmap=cc.coolwarm)
-    export_image(img, "out", export_path=".")
-    """
