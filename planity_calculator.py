@@ -19,6 +19,7 @@ import math
 # Definning global variables
 radius = 0.06
 px_size = 0.10
+px_size = 0.08
 radius_l2 = 0.05
 radius2 = 1
 
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     df_intermediate['k'] = (N_z*((df_coords_3d['z'] - zmin)/(zmax - zmin))).astype(np.int64)
     df_intermediate['index'] = df_intermediate.index
     df_intermediate['voxel'] = (df_intermediate['i'] + df_intermediate['j']*(10**(np.log10(N_x)//1 + 1)) + df_intermediate['k']*(10**(np.log10(N_x)//1 + np.log10(N_y)//1 + 2))).astype(np.int64)
-    print(f" La nombre de voxels remplis différents est de {df_intermediate['voxel'].unique().size}")
+    print(f" The number of voxel that contain at least one point is {df_intermediate['voxel'].unique().size}")
     
     # We calculate the planity measure in each voxel 
     data = df_intermediate.groupby(['voxel'], group_keys=True).apply(planity_measure_df)
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     df_final.sort_index(inplace = True)
 
     # What time is it ? 
-    print(np.round(time.time() - start), 2)
+    print(f"It took {np.round(time.time() - start, 2)} seconds to compute")
 
     index = df_final.index
     las.add_extra_dim(laspy.ExtraBytesParams(name="planity",type=np.float64,description="More classes available"))
