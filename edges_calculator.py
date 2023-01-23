@@ -25,6 +25,9 @@ execute = "python create_image_edges.py"
 delta = 0.011
 kernel_size_max = 4
 
+plot_width = 1500
+plot_height = 1500
+
 if __name__ == "__main__": 
 
     # Read the .las file and import the data 
@@ -96,7 +99,7 @@ if __name__ == "__main__":
     N_y = np.int32(60000*(max(Y) - min(Y)))"""
 
     # We now create the final image
-    cvs = ds.Canvas(plot_width=1000, plot_height=1000)
+    cvs = ds.Canvas(plot_width=plot_width, plot_height=plot_height)
     agg = cvs.points(df_coords_3d, 'x', 'y', agg = ds.reductions.mean('planity'))
     agg_array = np.asarray(agg)
     np.nan_to_num(agg_array, copy=False)
