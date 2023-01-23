@@ -10,13 +10,15 @@ from skimage import filters
 from skimage.filters import rank
 from skimage.util import img_as_ubyte
 import time
+import codecs
+
 
 #global variables
 exposant = 1.
 r_denoised = 2.
-r_markers = 10.
+r_markers = 10.  # for 4 with 1200 resolution 
 lim_markers = 30.
-r_gradient = 5.
+r_gradient = 5. # for 4 with 1200 resolution
 
 #adjustement functions
 def normalize(array):
@@ -50,8 +52,10 @@ if __name__ == "__main__":
     # disk(5) is used here to get a more smooth image
     markers = rank.gradient(denoised, disk(r_markers)) < lim_markers
     markers = ndi.label(markers)[0]
+
     # local gradient (disk(2) is used to keep edges thin)
     gradient = rank.gradient(denoised, disk(r_gradient))
+
     # process the watershed
     labels = watershed(gradient, markers)
     """
@@ -83,6 +87,7 @@ if __name__ == "__main__":
     #select the biggest ones that might be a tetrapod
     labels_sizes = np.array([(labels == i).sum() for i in range(labels.max())])
     tetra_indices = list(np.where(labels_sizes>50000)[0])
+    # tetra_indices = list(np.where(labels_sizes>30000)[0])
     # list of arrays representing masks
     tetrapods = []
     for i in tetra_indices:
@@ -93,6 +98,6 @@ if __name__ == "__main__":
     for i in range(len(tetrapods)):
         np.savetxt(filename[:-4] + f'tetramask{i}', tetrapods[i])
 
+
     # What time is it ? 
     print(np.round(time.time() - start, 2))
-    
