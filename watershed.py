@@ -57,7 +57,7 @@ if __name__ == "__main__":
     """
     ######### v1 end #########################################
 
-    ########### v2 with invers_gaussian_gradient##############
+    ########### v2 with inverse_gaussian_gradient##############
 
     # new gradient
     gradient = 1 - inverse_gaussian_gradient(array, alpha = 1000, sigma = 10)
