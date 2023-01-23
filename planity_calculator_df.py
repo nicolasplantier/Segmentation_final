@@ -7,6 +7,8 @@ from statsmodels.formula.api import ols
 from tqdm import tqdm 
 import time
 import math 
+import laspy
+from laspy.file import File
 
 
 # Definning global variables
@@ -47,11 +49,21 @@ if __name__ == "__main__":
     # Start the clock 
     start = time.time()
 
-    csv_filenames = ["..\\ajaccio_patches\\An2019-1-1-3_patch15.csv",
-                    "..\\ajaccio_patches\\An2019-1-1-1_patch21.csv",
-                    "..\\ajaccio_patches\\e_An2020-1-0_patch16.csv"]
-    for csv_filename in tqdm(csv_filenames):
-        df_coords_3d = pd.read_csv(csv_filename)
+    las_filenames = ["..\\ajaccio_patches\\An2019-1-1-3_patch5.las",
+                    "..\\ajaccio_patches\\An2019-1-1-2_patch11.las",
+                    "..\\ajaccio_patches\\An2019-0-0-3_patch9.las"]
+    for las_filename in tqdm(las_filenames):
+        las = laspy.read(las_filename) 
+        n = len(las.x)
+
+        # shift the data to simplify
+        x_scaled = np.array(las.x) - np.array(las.x).min()
+        y_scaled = np.array(las.y) -  np.array(las.y).min()
+        z_scaled = np.array(las.z) 
+
+        # Create the dataframe
+        np_coords_3d = np.concatenate((x_scaled.reshape((n,1)), y_scaled.reshape((n,1)), z_scaled.reshape((n,1))), axis = 1)
+        df_coords_3d = pd.DataFrame(data=np_coords_3d, columns=['x', 'y', 'z']) 
 
         # We create a new method, where we calculate the planity measure on voxels 
         xmax, xmin = np.max(df_coords_3d['x']), np.min(df_coords_3d['x'])
@@ -73,13 +85,17 @@ if __name__ == "__main__":
         
         # We calculate the planity measure in each voxel 
         data = df_intermediate.groupby(['voxel'], group_keys=True).apply(planity_measure_df)
-        data = data.to_frame(name = "planity")
+        data = data.to_frame(name = "planity_measure")
         data.index = data.index.astype(np.int64)
         df_final = pd.merge(df_intermediate, data, left_on='voxel', right_index=True)
         df_final.index = df_final['index']
         df_final.sort_index(inplace = True)
 
-        df_final.to_csv("..\\test\\" +  csv_filename[-24:-4] + 'planity.csv')
+        index = df_final.index
+        las.add_extra_dim(laspy.ExtraBytesParams(name="planity",type=np.float64,description="More classes available"))
+        las.points.planity[:] = df_final['planity_measure']
 
+        las.write("..\\test\\" +  las_filename[-24:-4] + 'planity.las')
+        
     # What time is it ? 
     print(f"It took {np.round(time.time() - start, 2)} seconds to compute")

@@ -10,9 +10,10 @@ from tqdm import tqdm
 import os
 
 # global variables
-selected_index = [0, 1, 2, 3, 4, 5, 6, 7]
-step = 0.8
+selected_index = [1, 2, 3, 4, 5, 6, 7]
+step = 0.5
 min_size = 500000
+points_per_patch = 1500000
 
 # global functions
 def las_to_df(las):    
@@ -62,7 +63,7 @@ def for_patches(df):
     df[['x_los', 'y_los']] = canonized.T
     return df, norm_f_1, norm_f_2
 
-def create_patches(for_patches, step = 0.8, min_size = 500000):
+def create_patches(for_patches, step = 0.8, min_size = 500000, points_per_patch = 1000000):
     """
     With for_patches' result, returns df patches of around 1 million points
     from a grid with overlapping (step designates where the following patch
@@ -74,7 +75,7 @@ def create_patches(for_patches, step = 0.8, min_size = 500000):
     n = len(df_can)
     #choose the adequate splitting
     density = n  #in the canonic basis
-    patch_area = 1000000/density
+    patch_area = points_per_patch/density
     ratio = norm_f_2/norm_f_1
     side_x = np.sqrt(ratio * patch_area)
     side_y = side_x/ratio
@@ -150,14 +151,30 @@ if __name__ == "__main__":
             "..\\ajaccio_tetrapods_samples\\NGF_L93_Photogrametrie_An2020-1-0_tetrapods.las"]
     pointclouds = [laspy.read(filenames[i]) for i in selected_index]
     current_directory = os.getcwd()
-    new_directory = r'ajaccio_patches'
+    new_directory = r'..\ajaccio_patches'
     final_directory = os.path.join(current_directory, new_directory)
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
     for k in tqdm(range(len(pointclouds))):
         df = las_to_df(pointclouds[k])
-        patches = create_patches(for_patches(df), step = step, min_size = min_size)
+        patches = create_patches(for_patches(df), step = step, min_size = min_size, points_per_patch = points_per_patch)
+        las = laspy.read(filenames[k])
+        header = las.header
+        rap_x = las.X[0]/las.x[0]
+        rap_y = las.y[0]/las.y[0]
+        rap_z = las.z[0]/las.z[0]
         for number in tqdm(range(len(patches))):
-            patches[number].to_csv(new_directory +  '\\' +filenames[selected_index[k]][-26:-13] + f'patch{number}.csv')
+            df = patches[number]
+            header.point_count = len(df)
+            patch_las = laspy.LasData(header)
+            df.loc[:,'x'] += np.array(las.x).min()
+            df.loc[:,'y'] += np.array(las.y).min()
+            patch_las.points.X = df['x']*rap_x
+            patch_las.points.Y = df['y']*rap_y
+            patch_las.points.Z = df['z']*rap_z
+            patch_las.points.x = df['x']
+            patch_las.points.y = df['y']
+            patch_las.points.z = df['z']
+            patch_las.write(new_directory +  '\\' +filenames[selected_index[k]][-26:-13] + f'patch{number}.las')
     # What time is it ? 
     print(np.round(time.time() - start, 2))

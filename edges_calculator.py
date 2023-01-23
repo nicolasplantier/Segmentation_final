@@ -25,8 +25,8 @@ execute = "python create_image_edges.py"
 delta = 0.011
 kernel_size_max = 4
 
-plot_width = 1500
-plot_height = 1500
+plot_width = 1224
+plot_height = 1224
 
 if __name__ == "__main__": 
 

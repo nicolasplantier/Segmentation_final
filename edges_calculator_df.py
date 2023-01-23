@@ -9,23 +9,34 @@ import time
 import datashader as ds
 import scipy
 import math
+import laspy
+from laspy.file import File
 
 
 path = "./Documents/Mines Paris/2A/Data sophia/Projet de recherche/Tetrapodes/Segmentation/"
 execute = "python create_image_edges.py"
 delta = 0.011
 kernel_size_max = 4
+plot_width = 1224
+plot_height = 1224
 
 if __name__ == "__main__": 
 
     start = time.time()
     # Read the .cvs file and import the data 
 
-    csv_filenames = ["..\\test\\An2019-1-1-3_patch15planity.csv",
-                    "..\\test\\An2019-1-1-1_patch21planity.csv",
-                    "..\\test\\e_An2020-1-0_patch16planity.csv"]
-    for csv_filename in tqdm(csv_filenames):
-        df_coords_3d = pd.read_csv(csv_filename)
+    las_filenames = ["..\\test\\An2019-1-1-3_patch5planity.las",
+                    "..\\test\\An2019-1-1-2_patch11planity.las",
+                    "..\\test\\An2019-0-0-3_patch9planity.las"]
+    for las_filename in tqdm(las_filenames):
+        las = laspy.read(las_filename) 
+        n = len(las.x)
+        x_scaled = np.array(las.x)
+        y_scaled = np.array(las.y) 
+        z_scaled = np.array(las.z)
+        np_coords_3d = np.concatenate((x_scaled.reshape((n,1)), y_scaled.reshape((n,1)), z_scaled.reshape((n,1)), np.array(las.points.planity[:].tolist()).reshape((n,1))), axis = 1)
+        df_coords_3d = pd.DataFrame(data=np_coords_3d, columns=['x', 'y', 'z', 'planity']) 
+
 
         # Let's delete the points behind, that we can't see
         N_ini_points = len(df_coords_3d)
@@ -53,7 +64,7 @@ if __name__ == "__main__":
         df_coords_3d.loc[index, 'planity'] = max_value
 
         # We now create the final image
-        cvs = ds.Canvas(plot_width=1000, plot_height=1000)
+        cvs = ds.Canvas(plot_width=plot_width, plot_height=plot_height)
         agg = cvs.points(df_coords_3d, 'x', 'y', agg = ds.reductions.mean('planity'))
         agg_array = np.asarray(agg)
         np.nan_to_num(agg_array, copy=False)
@@ -66,4 +77,4 @@ if __name__ == "__main__":
         agg_array = scipy.ndimage.maximum_filter(input  = agg_array, size = kernel_size_max, mode = 'constant') 
         
         # We save the txt representing the image 
-        np.savetxt(csv_filename[:-11] + 'edges.txt', agg_array)
+        np.savetxt(las_filename[:-11] + 'edges.txt', agg_array)
