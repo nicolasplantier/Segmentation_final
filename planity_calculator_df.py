@@ -47,9 +47,9 @@ if __name__ == "__main__":
     # Start the clock 
     start = time.time()
 
-    csv_filenames = ["\\ajaccio_patches\\An2019-1-1-3_patch15.csv",
-                    "\\ajaccio_patches\\An2019-1-1-1_patch21.csv",
-                    "\\ajaccio_patches\\e_An2020-1-0_patch16.csv"]
+    csv_filenames = ["..\\ajaccio_patches\\An2019-1-1-3_patch15.csv",
+                    "..\\ajaccio_patches\\An2019-1-1-1_patch21.csv",
+                    "..\\ajaccio_patches\\e_An2020-1-0_patch16.csv"]
     for csv_filename in tqdm(csv_filenames):
         df_coords_3d = pd.read_csv(csv_filename)
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         df_final.index = df_final['index']
         df_final.sort_index(inplace = True)
 
-        df_final.to_csv("\\test\\" +  csv_filename[-24,-4] + 'planity.csv')
+        df_final.to_csv("..\\test\\" +  csv_filename[-24:-4] + 'planity.csv')
 
     # What time is it ? 
     print(f"It took {np.round(time.time() - start, 2)} seconds to compute")
