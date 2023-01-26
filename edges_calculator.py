@@ -20,10 +20,12 @@ import scipy
 import math
 
 
+
 path = "./Documents/Mines Paris/2A/Data sophia/Projet de recherche/Tetrapodes/Segmentation/"
 execute = "python create_image_edges.py"
 delta = 0.011
 kernel_size_max = 4
+
 
 plot_width = 1500
 plot_height = 1500
@@ -102,15 +104,50 @@ if __name__ == "__main__":
     cvs = ds.Canvas(plot_width=plot_width, plot_height=plot_height)
     agg = cvs.points(df_coords_3d, 'x', 'y', agg = ds.reductions.mean('planity'))
     agg_array = np.asarray(agg)
+
+
+    """transitory_array = np.nan_to_num(agg_array, copy=True)
+    max_array = np.max(transitory_array) + 0.02
+
+    transitory_array1 = np.copy(agg_array)    
+    transitory_array2 = np.copy(agg_array)    
+
+
+    for i in range(transitory_array1.shape[0]):
+        j = 0
+        while math.isnan(transitory_array1[i,j]) and j < transitory_array1.shape[1]-1:
+            transitory_array1[i,j] = max_array
+            j += 1
+        j = (transitory_array1.shape[1]-1)
+        while math.isnan(transitory_array1[i,j]) and j > 0 : 
+            transitory_array1[i,j] = max_array
+            j -= 1
+
+    for j in range(transitory_array2.shape[1]):
+        i = 0
+        while math.isnan(transitory_array2[i,j]) and i < transitory_array2.shape[0]-1:
+            transitory_array2[i,j] = max_array
+            i += 1
+        i = (transitory_array2.shape[0]-1)
+        while math.isnan(transitory_array2[i,j]) and i > 0 : 
+            transitory_array2[i,j] = max_array
+            i -= 1
+
+    agg_array[np.logical_and(transitory_array1 > max_array - 0.01, transitory_array2 > max_array - 0.01)] = max_array - 0.02"""
+
     np.nan_to_num(agg_array, copy=False)
+
     max_array = agg_array.max()
+
 
     # We first set maximum value to 0.45
     # agg_array[agg_array > 0.45] = 0.45
 
     # We then apply a maximum function to avoid black pixels : it reduces the size of the shape but makes better the classification algorithm
     agg_array = scipy.ndimage.maximum_filter(input  = agg_array, size = kernel_size_max, mode = 'constant') 
-    
+
+    agg_array[agg_array <= 0.0001] = np.max(agg_array)
+
     # We save the txt representing the image 
     np.savetxt("table_image2.txt", agg_array)
 
