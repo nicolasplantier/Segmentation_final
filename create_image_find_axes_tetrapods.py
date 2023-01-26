@@ -25,6 +25,7 @@ from planity_calculator import create_voxel_column
 import datashader as ds 
 from mpl_toolkits.mplot3d import axes3d  # Fonction pour la 3D
 from matplotlib import style
+import os
 
 
 
@@ -148,61 +149,70 @@ def create_voxel_list(df):
 
 
 if __name__ == "__main__": 
-    filename = f"./tetrapods_models/tetrapod_model_2.las"
-    las = laspy.read(filename)
-    n = len(las.x)
+    for filename in os.listdir("./tetrapods_models"):
+        if filename != ".DS_Store":
+            f = f"./tetrapods_models/{filename}"
+            las = laspy.read(f)
+            n = len(las.x)
 
-    # shift the data to simplify
-    x_scaled = np.array(las.x) - np.array(las.x).min()
-    y_scaled = np.array(las.y) -  np.array(las.y).min()
-    z_scaled = np.array(las.z) 
-
-
-    # Create the dataframe
-    np_coords_3d = np.concatenate((x_scaled.reshape((n,1)), y_scaled.reshape((n,1)), z_scaled.reshape((n,1))), axis = 1)
-    df_coords_3d = pd.DataFrame(data=np_coords_3d, columns=['x', 'y', 'z']) 
+            # shift the data to simplify
+            x_scaled = np.array(las.x) - np.array(las.x).min()
+            y_scaled = np.array(las.y) -  np.array(las.y).min()
+            z_scaled = np.array(las.z) 
 
 
-    # We create the new voxel column as well as i,j,k, index, voxel columns
-    delta, xsize, ysize, zsize = calculate_delta(df_coords_3d)
-    df_coords_3 = create_voxel_column_constant(df_coords_3d, m)
-    df_image_3d = create_3d_image(m)
+            # Create the dataframe
+            np_coords_3d = np.concatenate((x_scaled.reshape((n,1)), y_scaled.reshape((n,1)), z_scaled.reshape((n,1))), axis = 1)
+            df_coords_3d = pd.DataFrame(data=np_coords_3d, columns=['x', 'y', 'z']) 
 
 
-
-    # ----------------------------------------------------------------------------------------------------------------
-
-
-    # We calculate the planity measure in each voxel 
-    data = df_coords_3.groupby(['voxel'], group_keys=True).apply(vect_plan)
-    data = data.to_frame(name = "planity_vector") # in this dataframe, we have the normal vector for each voxel => we need to calculate 
-    data.dropna(inplace = True)
-
-    # just to split the columns 
-    data['voxel'] = data.index
-    data = (pd.concat([data['voxel'], data['planity_vector'].apply(pd.Series)], axis = 1).rename(columns = {0: 'dx', 1: 'dy', 2: 'dz'})).drop('voxel', axis = 1) 
-    data, df_voxel_counts = create_voxel_list(data)
-    df_image_3d.index = df_image_3d['voxel']
-    df_final_image = df_image_3d.join(df_voxel_counts) 
-    df_final_image = df_final_image.fillna(0).astype(np.int64)
-
-    fig, axes = plt.subplots(3,3,figsize=(10, 6))
-    s = 0
-    for i in range(3):
-        for j in range(3):
-            s += 10
-            image = df_final_image[df_final_image['k'] == s] # we go in the middle of the cube
-            cvs = ds.Canvas(plot_width=m, plot_height=m)
-            agg = cvs.points(image, 'i', 'j', agg = ds.reductions.mean('counts'))
-            agg_array = np.asarray(agg)
-            np.nan_to_num(agg_array, copy=False)
-            axes[i,j].set_title(f"Cut over the layer number {s}")
-            axes[i,j].axis('off')
-            axes[i,j].imshow(agg_array, cmap = 'jet')
-
-    plt.savefig("echographie_tetrapod.png", dpi = 400)
-    df_final_image.to_csv(f"echographie_tetrapod.csv")
+            # We create the new voxel column as well as i,j,k, index, voxel columns
+            delta, xsize, ysize, zsize = calculate_delta(df_coords_3d)
+            df_coords_3d = create_voxel_column_constant(df_coords_3d, m)
+            df_image_3d = create_3d_image(m)
 
 
 
-    
+            # ----------------------------------------------------------------------------------------------------------------
+
+
+            # We calculate the planity measure in each voxel 
+            data = df_coords_3d.groupby(['voxel'], group_keys=True).apply(vect_plan)
+            data = data.to_frame(name = "planity_vector") # in this dataframe, we have the normal vector for each voxel => we need to calculate 
+            data.dropna(inplace = True)
+
+            # just to split the columns 
+            data['voxel'] = data.index
+            data = (pd.concat([data['voxel'], data['planity_vector'].apply(pd.Series)], axis = 1).rename(columns = {0: 'dx', 1: 'dy', 2: 'dz'})).drop('voxel', axis = 1) 
+            data, df_voxel_counts = create_voxel_list(data)
+            df_image_3d.index = df_image_3d['voxel']
+            df_final_image = df_image_3d.join(df_voxel_counts) 
+            df_final_image = df_final_image.fillna(0).astype(np.int64)
+
+            df_final_image_copy = df_final_image.copy()
+            """df_final_image_copy['j_f'] = m-df_final_image['j']
+            df_final_image_copy['i_f'] = df_final_image['i']
+
+            df_final_image.loc[:,'i'] = df_final_image_copy.loc[:,'i_f']      
+            df_final_image.loc[:,'j'] = df_final_image_copy.loc[:,'j_f']"""  
+
+            fig, axes = plt.subplots(3,3,figsize=(10, 6))
+            s = 0
+            for i in range(3):
+                for j in range(3):
+                    s += 10
+                    image = df_final_image[df_final_image['k'] == s] # we go in the middle of the cube
+                    cvs = ds.Canvas(plot_width=m, plot_height=m)
+                    agg = cvs.points(image, 'i', 'j', agg = ds.reductions.mean('counts'))
+                    agg_array = np.asarray(agg)
+                    np.nan_to_num(agg_array, copy=False)
+                    axes[i,j].set_title(f"Cut over the layer number {s}")
+                    axes[i,j].axis('off')
+                    axes[i,j].imshow(agg_array, cmap = 'jet')
+
+            plt.savefig(f"./echographie_tetrapods/{filename[:-4]}.png", dpi = 400)
+            df_final_image.to_csv(f"./echographie_tetrapods/{filename[:-4]}.csv")
+
+
+
+            
